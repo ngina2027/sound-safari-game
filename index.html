@@ -74,6 +74,9 @@ function begin(){
 }
 function levelSeconds(){return Math.max(15,45-Math.floor((level-1)/5)*2)}
 function startLevel(){
+ $('overlay').style.display='none';
+ items=[];
+ round=0;
  items=[];round=0;purpleCount=0;orangeCount=0;time=levelSeconds();spawn=0;
  // Every level contains exactly ten 1s and ten 2s, mixed with random distractors 3–10.
  levelPool=[...Array(10).fill('1'),...Array(10).fill('2')];
