@@ -149,9 +149,9 @@ function draw(t){bg(t);
 items.forEach(o=>{
  if(o.tapped){c.save();c.globalAlpha=.75;c.fillStyle='#fff36b';for(let q=0;q<4;q++){let a=(performance.now()/85+q*1.7);c.beginPath();c.arc(o.x+Math.cos(a)*19,o.y+Math.sin(a)*15,3,0,7);c.fill()}c.restore()}
  c.save();c.translate(o.x,o.y);
- c.font='27px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(o.creature||set().fall,0,-5);
- c.fillStyle='#fff';c.strokeStyle='#ffbf45';c.lineWidth=3;c.beginPath();c.arc(0,17,14,0,7);c.fill();c.stroke();
- c.font='1000 17px system-ui';c.fillStyle='#553bb9';c.fillText(o.val,0,18);
+ c.font='35px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(o.creature||set().fall,0,-5);
+ c.fillStyle='#fff';c.strokeStyle='#ffbf45';c.lineWidth=3;c.beginPath();c.arc(0,19,19,0,7);c.fill();c.stroke();
+ c.font='1000 22px system-ui';c.fillStyle='#553bb9';c.fillText(o.val,0,18);
  c.restore();
 });
 // Large, fixed colour-coded targets remain visible throughout play.
