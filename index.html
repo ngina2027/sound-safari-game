@@ -8,10 +8,10 @@ header{display:flex;justify-content:space-between;align-items:center;padding:6px
 #overlay{position:absolute;inset:0;z-index:5;background:#34276dbb;display:flex;align-items:center;justify-content:center;padding:12px}.panel{background:#fff8df;border:5px solid white;border-radius:24px;padding:17px;max-width:430px;width:100%;text-align:center;box-shadow:0 7px #d49d44}.panel h1{font-size:clamp(27px,7vw,39px);color:#5c47d0;margin:0 0 5px}.panel p{font-size:14px;line-height:1.4;margin:8px 0 14px}button{border:0;border-radius:14px;padding:10px 13px;background:#ffce4d;color:#553d9c;font-weight:1000;font-size:14px;box-shadow:0 4px #df9e2c}button:active{transform:translateY(3px);box-shadow:0 1px #df9e2c}#bottom{display:flex;justify-content:center;gap:8px;padding:0 8px 8px;flex-wrap:wrap}#help{text-align:center;font-size:10px;color:#54618c;padding-bottom:4px}
 </style></head><body><div id="app">
 <header><div class="logo">🌈 SOUND SAFARI</div><div style="display:flex;gap:5px"><div class="chip" id="world">🌼 NUMBER GARDEN</div><button id="sound">🔊</button></div></header>
-<div id="hud"><div class="chip" id="level">LEVEL 1 / 150</div><div class="chip" id="time">⏱ 40</div><div class="chip" id="score">⭐ 0</div><div class="chip" id="sizes">🟣 1 · 🟠 1</div></div>
-<div id="clue"><small>TAP THE NUMBER BEFORE IT REACHES THE LINE</small><span id="clueText">Tap number 1 for the purple basket</span></div>
+<div id="hud"><div class="chip" id="level">LEVEL 1 / 150</div><div class="chip" id="time">⏱ 40</div><div class="chip" id="score">⭐ 0</div><div class="chip" id="sizes">🟣 1 · 🟠 2</div></div>
+<div id="clue"><small>TAP THE NUMBER BEFORE IT REACHES THE LINE</small><span id="clueText">Tap the purple and orange target numbers</span></div>
 <div id="arena"><canvas id="game"></canvas><div id="banner"></div><div id="overlay"><div class="panel"><h1>🐾 Sound Safari</h1><p>Before each game, listen to the voice instructions.<br><b>Purple basket catches 1.</b><br><b>Orange basket catches 2.</b><br>Tap every falling number before it crosses the line. Purple catches 1; orange catches 2. Miss even one and the level is lost. Catch the same number of 1s and 2s to make both baskets equal and win.</p><button id="start">START PLAYING ▶</button></div></div></div>
-<div id="bottom"><button id="hear">🔁 HEAR NUMBERS</button><button id="pause">Ⅱ PAUSE</button></div><div id="help">PURPLE 🟣 = NUMBER 1  |  ORANGE 🟠 = NUMBER 2  |  MISS ONE = LEVEL LOST</div>
+<div id="bottom"><button id="hear">🔁 HEAR NUMBERS</button><button id="pause">Ⅱ PAUSE</button></div><div id="help">PURPLE 🟣 / ORANGE 🟠 = FOLLOW THE TARGETS  |  MISS ONE = LEVEL LOST</div>
 </div>
 <script>
 (()=>{
@@ -47,6 +47,7 @@ const visuals=[
 ];
 
 function set(){const i=Math.floor((level-1)/10)%sets.length;return {...sets[i],...visuals[i]};}
+function targets(){const first=1+2*Math.floor((level-1)/10);return [String(first),String(first+1)];}
 function resize(){let r=cv.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr;c.setTransform(dpr,0,0,dpr,0,0)}new ResizeObserver(resize).observe(cv);resize();
 let ac;function tone(f,d=.12,type='sine',v=.06){if(!soundOn)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();let o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.stop(ac.currentTime+d)}catch(e){}}
 function speak(t){if(!soundOn)return;try{
@@ -60,8 +61,8 @@ function speak(t){if(!soundOn)return;try{
  }catch(e){}}
 function giggle(){}
 function crying(){}
-function clue(){$('clueText').textContent=`${set().basket} ${set().world} • 1 = PURPLE • 2 = ORANGE`;}
-function hud(){$('level').textContent=`LEVEL ${level} / 150`;$('time').textContent=`⏱ ${Math.ceil(time)}s / ${levelSeconds()}s`;$('score').textContent='⭐ '+score;$('sizes').textContent=`🟣 ${purpleCount}/10 · 🟠 ${orangeCount}/10`;$('world').textContent=set().world}
+function clue(){const [a,b]=targets();$('clueText').textContent=`${set().basket} • ${a} = PURPLE • ${b} = ORANGE`;}
+function hud(){$('level').textContent=`LEVEL ${level} / 150`;$('time').textContent=`⏱ ${Math.ceil(time)}s / ${levelSeconds()}s`;$('score').textContent='⭐ '+score;$('sizes').textContent=`🟣 ${targets()[0]}: ${purpleCount}/10 · 🟠 ${targets()[1]}: ${orangeCount}/10`;$('world').textContent=set().world}
 function begin(){
   level=1;
   score=0;
@@ -75,9 +76,9 @@ $('overlay').style.display='flex';
     <div class="panel">
       <h1>🎧 Ready, little explorer?</h1>
       <p>
-        <b>Purple 🟣 catches number 1.</b><br>
-        <b>Orange 🟠 catches number 2.</b><br>
-        Tap only numbers 1 and 2 before they reach the line!
+        <b>Purple 🟣 and orange 🟠 have number missions!</b><br>
+        You unlock a new pair of numbers every 10 levels.<br>
+        Catch the two numbers shown at the top and avoid all others!
       </p>
       <button id="ready">HEAR INSTRUCTIONS ▶</button>
     </div>`;
@@ -100,7 +101,7 @@ $('overlay').style.display='flex';
    try{
       speechSynthesis.cancel();
     let u=new SpeechSynthesisUtterance(
-        'Purple catches number one. Orange catches number two. Tap only one and two!'
+        `Purple catches number ${targets()[0]}. Orange catches number ${targets()[1]}. Tap only those two numbers!`
       );
 let voices=speechSynthesis.getVoices();
       let preferred=voices.find(v=>
@@ -124,9 +125,10 @@ function startLevel(){
  items=[];
  round=0;
  items=[];round=0;purpleCount=0;orangeCount=0;time=levelSeconds();spawn=0;
- // Every level contains exactly ten 1s and ten 2s, mixed with random distractors 3–10.
- levelPool=[...Array(10).fill('1'),...Array(10).fill('2')];
- for(let i=0;i<12;i++) levelPool.push(String(3+Math.floor(Math.random()*8)));
+ // Each 10-level world unlocks a new pair: 1–2, 3–4, ... 29–30.
+ const [targetA,targetB]=targets();
+ levelPool=[...Array(10).fill(targetA),...Array(10).fill(targetB)];
+ for(let i=0;i<12;i++){let distractor;do{distractor=String(1+Math.floor(Math.random()*30));}while(distractor===targetA||distractor===targetB);levelPool.push(distractor);}
  for(let i=levelPool.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[levelPool[i],levelPool[j]]=[levelPool[j],levelPool[i]]}
  roundTarget=10;clue();hud();playing=true;paused=false;last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)
 }
@@ -180,12 +182,13 @@ items.forEach(o=>{
 });
 // Large, fixed colour-coded targets remain visible throughout play.
  c.font='1000 16px system-ui';c.textAlign='center';
- c.fillStyle='#4f2bb5';c.fillText('🟣 PURPLE = 1',purpleX*W,H-145);
- c.fillStyle='#a84d20';c.fillText('🟠 ORANGE = 2',orangeX*W,H-145);
- basket(purpleX*W,H-62,purpleSize*1.12,'#8959e9','CATCH 1',set().catchers[0]);
- basket(orangeX*W,H-62,orangeSize*1.12,'#ff9855','CATCH 2',set().catchers[1])}
-function targetBasket(v){if(v==='1')return 'purple';if(v==='2')return 'orange';return null}
-function tapItem(o){if(o.tapped)return;if(o.y>H-125){loseImmediately('Too late! The number passed the line.');return}let dest=targetBasket(o.val);if(!dest){loseImmediately('That was a distractor! Catch only 1 and 2.');return}o.tapped=true;o.flyT=0;o.startX=o.x;o.startY=o.y;o.startR=o.r;o.dest=dest;tone(520,.07);$('banner').textContent='TAP!';fxTime=.25}
+ const [targetA,targetB]=targets();
+ c.fillStyle='#4f2bb5';c.fillText('🟣 PURPLE = '+targetA,purpleX*W,H-145);
+ c.fillStyle='#a84d20';c.fillText('🟠 ORANGE = '+targetB,orangeX*W,H-145);
+ basket(purpleX*W,H-62,purpleSize*1.12,'#8959e9','CATCH '+targetA,set().catchers[0]);
+ basket(orangeX*W,H-62,orangeSize*1.12,'#ff9855','CATCH '+targetB,set().catchers[1])}
+function targetBasket(v){const [a,b]=targets();if(v===a)return 'purple';if(v===b)return 'orange';return null}
+function tapItem(o){if(o.tapped)return;if(o.y>H-125){loseImmediately('Too late! The number passed the line.');return}let dest=targetBasket(o.val);if(!dest){loseImmediately('That was a distractor! Catch only '+targets()[0]+' and '+targets()[1]+'.');return}o.tapped=true;o.flyT=0;o.startX=o.x;o.startY=o.y;o.startR=o.r;o.dest=dest;tone(520,.07);$('banner').textContent='TAP!';fxTime=.25}
 function basketDropSound(){tone(260,.07,'sine',.07);setTimeout(()=>tone(420,.08,'sine',.06),65);setTimeout(()=>tone(620,.12,'triangle',.045),130)}
 function swallow(o){
  basketDropSound();
@@ -198,9 +201,10 @@ function swallow(o){
 }
 function endLevel(){
  if(purpleCount===10&&orangeCount===10&&Math.abs(purpleSize-orangeSize)<0.001){
-   panel('🏆 LEVEL COMPLETE!','You collected ten 1s and ten 2s! Both baskets are equal. Welcome to the next world!','NEXT LEVEL ▶',next);
+   const [a,b]=targets();const unlocking=level%10===0&&level<150;const nextA=String(Number(a)+2),nextB=String(Number(b)+2);
+   panel(unlocking?'🔓 NEW NUMBERS UNLOCKED!':'🏆 LEVEL COMPLETE!',unlocking?`Amazing! You mastered ${a} and ${b}. Your next adventure unlocks numbers ${nextA} and ${nextB}!`:`You collected ten ${a}s and ten ${b}s. Both baskets are equal. Keep going!`,unlocking?'ENTER NEW WORLD ▶':'NEXT LEVEL ▶',next);
  }else{
-   panel('😢 TIME UP — LEVEL LOST',`Purple collected ${purpleCount}/10 ones. Orange collected ${orangeCount}/10 twos. Both must reach 10 before time runs out.`,'TRY AGAIN',()=>{
+   panel('😢 TIME UP — LEVEL LOST',`Purple collected ${purpleCount}/10 of number ${targets()[0]}. Orange collected ${orangeCount}/10 of number ${targets()[1]}. Both must reach 10 before time runs out.`,'TRY AGAIN',()=>{
      purpleSize=.82;orangeSize=.82;score=Math.max(0,score-round*10);items=[];round=0;
      $('overlay').style.display='none';startLevel();
    });
@@ -226,12 +230,12 @@ for(let i=items.length-1;i>=0;i--){let o=items[i];if(o.tapped){
  o.y=startY+(destY-startY)*ease- Math.sin(k*Math.PI)*Math.min(32,H*.07);
  o.r=o.startR*(1-ease*.62);
  if(k>=1){swallow(o);items.splice(i,1)}
-}else{o.y+=o.v*dt;if(o.y>H-125){items.splice(i,1);if(o.val==='1'||o.val==='2'){loseImmediately('You missed number '+o.val+'! Catch all ten of each target number.');return}}}}
+}else{o.y+=o.v*dt;if(o.y>H-125){items.splice(i,1);if(targetBasket(o.val)){loseImmediately('You missed number '+o.val+'! Catch all ten of each target number.');return}}}}
 if(fxTime>0){fxTime-=dt;if(fxTime<=0)$('banner').textContent=''}if(time<=0){
  playing=false;cancelAnimationFrame(raf);endLevel();return
 }draw(now);hud();raf=requestAnimationFrame(loop)}
 cv.addEventListener('pointerdown',e=>{let r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let hit=-1;for(let i=items.length-1;i>=0;i--){let o=items[i];if(Math.hypot(x-o.x,y-o.y)<o.r+15){hit=i;break}}if(hit>=0)tapItem(items[hit])});
-$('start').onclick=begin;$('hear').onclick=()=>{speak('Purple basket wants number one. Orange basket wants number two. Tap the falling number before the line!')};$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊':'🔇';if(!soundOn)speechSynthesis.cancel()};
+$('start').onclick=begin;$('hear').onclick=()=>{speak(`Purple basket wants number ${targets()[0]}. Orange basket wants number ${targets()[1]}. Tap only those numbers before the line!`)};$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊':'🔇';if(!soundOn)speechSynthesis.cancel()};
 $('pause').onclick=()=>{if(!playing&&!paused)return;paused=true;panel('⏸ PAUSED','Take a little rest, explorer!','CONTINUE',()=>{ $('overlay').style.display='none';paused=false;playing=true;last=performance.now();raf=requestAnimationFrame(loop)})};
 })();
 </script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script></body></html>
