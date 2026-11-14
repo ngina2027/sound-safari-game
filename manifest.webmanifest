@@ -1,12 +1,12 @@
 {
-  "id": "./",
-  "name": "Sound Safari",
+  "id": "/sound-safari-game/",
+  "name": "Sound Safari \u2013 Number Unlock Adventure",
   "short_name": "Sound Safari",
-  "description": "A fun educational number-catching game for children.",
+  "description": "A colourful number-catching learning game with 150 levels.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#c9f5ef",
   "theme_color": "#5140c8",
   "icons": [
@@ -20,13 +20,7 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }

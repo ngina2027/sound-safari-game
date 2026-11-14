@@ -7,7 +7,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:6px
 #arena{position:relative;flex:1;min-height:220px;margin:0 7px 6px;border:5px solid white;border-radius:23px;overflow:hidden;box-shadow:0 6px #7cc8b9;background:linear-gradient(#70d9f1,#d5f6bd 78%,#7bd28b)}canvas{width:100%;height:100%;display:block}#banner{position:absolute;top:37%;left:50%;transform:translate(-50%,-50%);font-size:clamp(22px,6vw,38px);font-weight:1000;color:white;text-shadow:0 3px 5px #45349a;text-align:center;pointer-events:none}
 #overlay{position:absolute;inset:0;z-index:5;background:#34276dbb;display:flex;align-items:center;justify-content:center;padding:12px}.panel{background:#fff8df;border:5px solid white;border-radius:24px;padding:17px;max-width:430px;width:100%;text-align:center;box-shadow:0 7px #d49d44}.panel h1{font-size:clamp(27px,7vw,39px);color:#5c47d0;margin:0 0 5px}.panel p{font-size:14px;line-height:1.4;margin:8px 0 14px}button{border:0;border-radius:14px;padding:10px 13px;background:#ffce4d;color:#553d9c;font-weight:1000;font-size:14px;box-shadow:0 4px #df9e2c}button:active{transform:translateY(3px);box-shadow:0 1px #df9e2c}#bottom{display:flex;justify-content:center;gap:8px;padding:0 8px 8px;flex-wrap:wrap}#help{text-align:center;font-size:10px;color:#54618c;padding-bottom:4px}
 </style></head><body><div id="app">
-<header><div class="logo">🌈 SOUND SAFARI</div><div style="display:flex;gap:5px"><div class="chip" id="world">🌼 NUMBER GARDEN</div><button id="sound">🔊</button></div></header>
+<header><div class="logo">🌈 SOUND SAFARI</div><div style="display:flex;gap:5px;align-items:center"><button id="install" hidden style="padding:7px 9px;font-size:11px">⬇ INSTALL</button><div class="chip" id="world">🌼 NUMBER GARDEN</div><button id="sound">🔊</button></div></header>
 <div id="hud"><div class="chip" id="level">LEVEL 1 / 150</div><div class="chip" id="time">⏱ 40</div><div class="chip" id="score">⭐ 0</div><div class="chip" id="sizes">🟣 1 · 🟠 2</div></div>
 <div id="clue"><small>TAP THE NUMBER BEFORE IT REACHES THE LINE</small><span id="clueText">Tap the purple and orange target numbers</span></div>
 <div id="arena"><canvas id="game"></canvas><div id="banner"></div><div id="overlay"><div class="panel"><h1>🐾 Sound Safari</h1><p>Before each game, listen to the voice instructions.<br><b>Purple basket catches 1.</b><br><b>Orange basket catches 2.</b><br>Tap every falling number before it crosses the line. Purple catches 1; orange catches 2. Miss even one and the level is lost. Catch the same number of 1s and 2s to make both baskets equal and win.</p><button id="start">START PLAYING ▶</button></div></div></div>
@@ -238,4 +238,11 @@ cv.addEventListener('pointerdown',e=>{let r=cv.getBoundingClientRect(),x=e.clien
 $('start').onclick=begin;$('hear').onclick=()=>{speak(`Purple basket wants number ${targets()[0]}. Orange basket wants number ${targets()[1]}. Tap only those numbers before the line!`)};$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊':'🔇';if(!soundOn)speechSynthesis.cancel()};
 $('pause').onclick=()=>{if(!playing&&!paused)return;paused=true;panel('⏸ PAUSED','Take a little rest, explorer!','CONTINUE',()=>{ $('overlay').style.display='none';paused=false;playing=true;last=performance.now();raf=requestAnimationFrame(loop)})};
 })();
-</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script></body></html>
+</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script>
+let deferredInstallPrompt=null;
+const installButton=document.getElementById('install');
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false;});
+installButton.addEventListener('click',async()=>{if(!deferredInstallPrompt){alert('To install: open Chrome menu ⋮ and choose “Install app” or “Add to Home screen”.');return;}deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;});
+window.addEventListener('appinstalled',()=>{installButton.hidden=true;});
+</script>
+</body></html>
