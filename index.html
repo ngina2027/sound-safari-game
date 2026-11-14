@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#5140c8"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.webmanifest"><title>Sound Safari</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;touch-action:manipulation;font-family:"Trebuchet MS",system-ui,sans-serif;color:#29264e;background:#c9f5ef}#app{height:100%;display:flex;flex-direction:column;background:linear-gradient(#9ce9f4,#e8ffd7 75%,#ffe7aa)}
+header{display:flex;justify-content:space-between;align-items:center;padding:6px 10px}.logo{font-size:clamp(18px,4vw,26px);font-weight:1000;color:#5540c6;text-shadow:0 2px white}.chip{background:white;border:3px solid white;border-radius:15px;padding:5px 8px;font-weight:900;font-size:12px;box-shadow:0 3px #d5ceff}
+#hud{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;padding:0 5px 5px}#clue{margin:0 auto 6px;background:white;border:4px solid #ffca51;border-radius:18px;padding:6px 14px;text-align:center;font-weight:1000;font-size:clamp(16px,3.8vw,22px);box-shadow:0 4px #e8a33b}#clue small{display:block;color:#8980ad;font-size:10px;letter-spacing:1px}
+#arena{position:relative;flex:1;min-height:220px;margin:0 7px 6px;border:5px solid white;border-radius:23px;overflow:hidden;box-shadow:0 6px #7cc8b9;background:linear-gradient(#70d9f1,#d5f6bd 78%,#7bd28b)}canvas{width:100%;height:100%;display:block}#banner{position:absolute;top:37%;left:50%;transform:translate(-50%,-50%);font-size:clamp(22px,6vw,38px);font-weight:1000;color:white;text-shadow:0 3px 5px #45349a;text-align:center;pointer-events:none}
+#overlay{position:absolute;inset:0;z-index:5;background:#34276dbb;display:flex;align-items:center;justify-content:center;padding:12px}.panel{background:#fff8df;border:5px solid white;border-radius:24px;padding:17px;max-width:430px;width:100%;text-align:center;box-shadow:0 7px #d49d44}.panel h1{font-size:clamp(27px,7vw,39px);color:#5c47d0;margin:0 0 5px}.panel p{font-size:14px;line-height:1.4;margin:8px 0 14px}button{border:0;border-radius:14px;padding:10px 13px;background:#ffce4d;color:#553d9c;font-weight:1000;font-size:14px;box-shadow:0 4px #df9e2c}button:active{transform:translateY(3px);box-shadow:0 1px #df9e2c}#bottom{display:flex;justify-content:center;gap:8px;padding:0 8px 8px;flex-wrap:wrap}#help{text-align:center;font-size:10px;color:#54618c;padding-bottom:4px}
+</style></head><body><div id="app">
+<header><div class="logo">🌈 SOUND SAFARI</div><div style="display:flex;gap:5px"><div class="chip" id="world">🌼 NUMBER GARDEN</div><button id="sound">🔊</button></div></header>
+<div id="hud"><div class="chip" id="level">LEVEL 1 / 150</div><div class="chip" id="time">⏱ 40</div><div class="chip" id="score">⭐ 0</div><div class="chip" id="sizes">🟣 1 · 🟠 1</div></div>
+<div id="clue"><small>TAP THE NUMBER BEFORE IT REACHES THE LINE</small><span id="clueText">Tap number 1 for the purple basket</span></div>
+<div id="arena"><canvas id="game"></canvas><div id="banner"></div><div id="overlay"><div class="panel"><h1>🐾 Sound Safari</h1><p>Before each game, listen to the voice instructions.<br><b>Purple basket catches 1.</b><br><b>Orange basket catches 2.</b><br>Tap every falling number before it crosses the line. Purple catches 1; orange catches 2. Miss even one and the level is lost. Catch the same number of 1s and 2s to make both baskets equal and win.</p><button id="start">START PLAYING ▶</button></div></div></div>
+<div id="bottom"><button id="hear">🔁 HEAR NUMBERS</button><button id="pause">Ⅱ PAUSE</button></div><div id="help">PURPLE 🟣 = NUMBER 1  |  ORANGE 🟠 = NUMBER 2  |  MISS ONE = LEVEL LOST</div>
+</div>
+<script>
+(()=>{
+const cv=document.querySelector('#game'),c=cv.getContext('2d'),$=id=>document.getElementById(id);
+let W=700,H=420,dpr=1,raf=0,last=0,playing=false,paused=false,level=1,score=0,time=40,spawn=0,items=[],purpleSize=.82,orangeSize=.82,purpleX=.32,orangeX=.68,fx='',fxTime=0,soundOn=true,round=0,roundTarget=10,done=false,purpleCount=0,orangeCount=0,levelPool=[];
+const sets=[
+{world:'🌼 NUMBER GARDEN',fall:'🌱',basket:'👾',bg:0},
+{world:'🐱 CAT TOWN',fall:'🐀',basket:'🐱',bg:1},
+{world:'🌳 MAGIC FOREST',fall:'🐸',basket:'🦊',bg:2},
+{world:'🦁 JUNGLE JAM',fall:'🐒',basket:'🦁',bg:3},
+{world:'🐥 FARM FRIENDS',fall:'🐥',basket:'🐮',bg:4},
+{world:'🐠 OCEAN WORLD',fall:'🐠',basket:'🐙',bg:5},
+{world:'🦖 DINO LAND',fall:'🦖',basket:'🦕',bg:6},
+{world:'🦒 WILD SAFARI',fall:'🦒',basket:'🐘',bg:7},
+{world:'🦋 BUTTERFLY MEADOW',fall:'🦋',basket:'🐝',bg:8},
+{world:'🐧 SNOWY WORLD',fall:'🐧',basket:'🐻‍❄️',bg:9},
+{world:'🍭 CANDY KINGDOM',fall:'🍬',basket:'🐲',bg:10},
+{world:'🚀 SPACE ADVENTURE',fall:'👽',basket:'🤖',bg:11},
+{world:'🐢 UNDERWATER QUEST',fall:'🐢',basket:'🦈',bg:12},
+{world:'🌋 VOLCANO VALLEY',fall:'🔥',basket:'🐉',bg:13},
+{world:'🌈 RAINBOW GALAXY',fall:'⭐',basket:'🦄',bg:14}
+];
+function set(){return sets[Math.floor((level-1)/2)%sets.length]}
+function resize(){let r=cv.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr;c.setTransform(dpr,0,0,dpr,0,0)}new ResizeObserver(resize).observe(cv);resize();
+let ac;function tone(f,d=.12,type='sine',v=.06){if(!soundOn)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();let o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.stop(ac.currentTime+d)}catch(e){}}
+function speak(t){if(!soundOn)return;try{
+ speechSynthesis.cancel();
+ let u=new SpeechSynthesisUtterance(t);
+ let voices=speechSynthesis.getVoices();
+ let preferred=voices.find(v=>/Google.*English|Samantha|Jenny|Aria|Natural.*English/i.test(v.name))||voices.find(v=>/^en(-|_)/i.test(v.lang));
+ if(preferred)u.voice=preferred;
+ u.rate=.92;u.pitch=1.02;u.volume=1;
+ speechSynthesis.speak(u);
+ }catch(e){}}
+function giggle(){}
+function crying(){}
+function clue(){$('clueText').textContent=`${set().basket} ${set().world} • 1 = PURPLE • 2 = ORANGE`;}
+function hud(){$('level').textContent=`LEVEL ${level} / 150`;$('time').textContent=`⏱ ${Math.ceil(time)}s / ${levelSeconds()}s`;$('score').textContent='⭐ '+score;$('sizes').textContent=`🟣 ${purpleCount}/10 · 🟠 ${orangeCount}/10`;$('world').textContent=set().world}
+function begin(){
+ level=1;score=0;purpleSize=.82;orangeSize=.82;round=0;playing=false;paused=false;
+ $('overlay').style.display='flex';
+ $('overlay').innerHTML=`<div class="panel"><h1>🎧 Ready, little explorer?</h1><p><b>Purple 🟣 catches 1.</b><br><b>Orange 🟠 catches 2.</b><br>Collect 10 ones and 10 twos before time runs out. Watch out for the other numbers!</p><button id="ready">HEAR INSTRUCTIONS ▶</button></div>`;
+ $('ready').onclick=()=>{
+   $('ready').disabled=true;$('ready').textContent='LISTENING…';
+   let briefing=`Hello, little explorer! The purple basket catches number one. The orange basket catches number two. Have fun!`;
+   if(soundOn){
+     try{
+       speechSynthesis.cancel();
+       let u=new SpeechSynthesisUtterance(briefing);
+       let voices=speechSynthesis.getVoices();
+       let preferred=voices.find(v=>/Google.*English|Samantha|Jenny|Aria|Natural.*English/i.test(v.name))||voices.find(v=>/^en(-|_)/i.test(v.lang));
+       if(preferred)u.voice=preferred;
+       u.rate=.90;u.pitch=1.03;u.volume=1;
+       u.onend=()=>{if($('ready')){$('overlay').style.display='none';startLevel()}};
+       u.onerror=()=>{$('overlay').style.display='none';startLevel()};
+       speechSynthesis.speak(u);
+     }catch(e){$('overlay').style.display='none';startLevel()}
+   }else{$('overlay').style.display='none';startLevel()}
+ };
+}
+function levelSeconds(){return Math.max(15,45-Math.floor((level-1)/5)*2)}
+function startLevel(){
+ items=[];round=0;purpleCount=0;orangeCount=0;time=levelSeconds();spawn=0;
+ // Every level contains exactly ten 1s and ten 2s, mixed with random distractors 3–10.
+ levelPool=[...Array(10).fill('1'),...Array(10).fill('2')];
+ for(let i=0;i<12;i++) levelPool.push(String(3+Math.floor(Math.random()*8)));
+ for(let i=levelPool.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[levelPool[i],levelPool[j]]=[levelPool[j],levelPool[i]]}
+ roundTarget=10;clue();hud();playing=true;paused=false;last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)
+}
+function panel(title,desc,button,fn){playing=false;$('overlay').style.display='flex';$('overlay').innerHTML=`<div class="panel"><h1>${title}</h1><p>${desc}</p><button id="next">${button}</button></div>`;$('next').onclick=fn}
+function next(){purpleSize=.82;orangeSize=.82;if(level>=150){panel('🏆 SAFARI SUPERSTAR!','You explored all 150 levels! Amazing listening and tapping!','PLAY AGAIN',begin);return}level++;startLevel()}
+function spawnItem(val,yOffset=0){
+ items.push({
+   x:28+Math.random()*(W-56),
+   y:-28-yOffset,
+   r:22+Math.random()*7,
+   v:76+level*1.45+Math.random()*34,
+   val,tapped:false,late:false
+ });
+}
+function spawnWave(){
+ // Several mixed numbers fall together. Targets are limited to ten of each per level.
+ if(levelPool.length===0)return;
+ const count=Math.min(levelPool.length,2+Math.floor(Math.random()*3));
+ for(let i=0;i<count;i++) spawnItem(levelPool.pop(),i*(24+Math.random()*28));
+}
+function bg(t){let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,['#75def2','#f8c4e9','#b6e8bb','#ffdda2','#a6a2ff','#74d8e8','#a8dc9b','#f6d28c','#c5a7ef','#d8efff','#ffb6d9','#252b65','#6bd6d1','#ff9a63','#b6a5ff'][set().bg]);g.addColorStop(1,'#d8f8c2');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#ffffffaa';for(let i=0;i<3;i++){let x=(i*W/2+t*.01)%(W+90)-40;c.beginPath();c.arc(x,40+i%2*35,17,0,7);c.arc(x+22,32+i%2*35,22,0,7);c.arc(x+45,40+i%2*35,17,0,7);c.fill()}c.fillStyle='#76d38a';c.beginPath();c.ellipse(W*.25,H+20,W*.42,H*.18,0,0,7);c.ellipse(W*.8,H+20,W*.4,H*.2,0,0,7);c.fill()}
+function basket(x,y,size,color,label){c.save();c.translate(x,y);c.scale(size,size);c.fillStyle='#426d5b44';c.beginPath();c.ellipse(0,29,42,8,0,0,7);c.fill();c.fillStyle=color;c.strokeStyle=color==='#8959e9'?'#5031a5':'#ad572d';c.lineWidth=4;c.beginPath();c.moveTo(-38,-7);c.quadraticCurveTo(-34,30,0,30);c.quadraticCurveTo(34,30,38,-7);c.closePath();c.fill();c.stroke();c.strokeStyle='#ffffff99';c.lineWidth=6;c.beginPath();c.arc(0,-7,39,Math.PI,0);c.stroke();c.fillStyle='white';c.beginPath();c.arc(-13,-8,9,0,7);c.arc(13,-8,9,0,7);c.fill();c.fillStyle='#29264e';c.beginPath();c.arc(-11,-6,4,0,7);c.arc(15,-6,4,0,7);c.fill();
+ if(level>=3){c.fillStyle=color;c.beginPath();c.moveTo(-31,-26);c.lineTo(-28,-49);c.lineTo(-8,-31);c.closePath();c.moveTo(31,-26);c.lineTo(28,-49);c.lineTo(8,-31);c.closePath();c.fill();c.fillStyle='#ffb0c8';c.beginPath();c.arc(-23,-31,5,0,7);c.arc(23,-31,5,0,7);c.fill();}
+ c.fillStyle='#29264e';c.beginPath();c.arc(0,12,9,.15,Math.PI-.15);c.strokeStyle='#29264e';c.lineWidth=3;c.stroke();
+ if(level>=3){c.strokeStyle='#29264e';c.lineWidth=1.5;c.beginPath();c.moveTo(-25,9);c.lineTo(-42,5);c.moveTo(-25,14);c.lineTo(-42,17);c.moveTo(25,9);c.lineTo(42,5);c.moveTo(25,14);c.lineTo(42,17);c.stroke();}
+ c.restore();c.fillStyle='#27335a';c.font='bold 12px system-ui';c.textAlign='center';c.fillText(label,x,y+size*47)}
+function draw(t){bg(t);
+ // Soft shifting motion keeps both baskets lively while keeping them in view.
+ purpleX=.30+Math.sin(t/950)*.035;
+ orangeX=.70+Math.sin(t/1050+1.7)*.035;
+ c.save();c.setLineDash([6,6]);c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.moveTo(0,H-125);c.lineTo(W,H-125);c.stroke();c.restore();c.fillStyle='#fff';c.font='bold 10px system-ui';c.textAlign='left';c.fillText('TAP BEFORE THIS LINE!',8,H-131);
+items.forEach(o=>{
+ if(o.tapped){c.save();c.globalAlpha=.75;c.fillStyle='#fff36b';for(let q=0;q<4;q++){let a=(performance.now()/85+q*1.7);c.beginPath();c.arc(o.x+Math.cos(a)*19,o.y+Math.sin(a)*15,3,0,7);c.fill()}c.restore()}
+ c.save();c.translate(o.x,o.y);
+ c.font='27px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(o.creature||set().fall,0,-5);
+ c.fillStyle='#fff';c.strokeStyle='#ffbf45';c.lineWidth=3;c.beginPath();c.arc(0,17,14,0,7);c.fill();c.stroke();
+ c.font='1000 17px system-ui';c.fillStyle='#553bb9';c.fillText(o.val,0,18);
+ c.restore();
+});
+// Large, fixed colour-coded targets remain visible throughout play.
+ c.font='1000 16px system-ui';c.textAlign='center';
+ c.fillStyle='#4f2bb5';c.fillText('🟣 PURPLE = 1',purpleX*W,H-145);
+ c.fillStyle='#a84d20';c.fillText('🟠 ORANGE = 2',orangeX*W,H-145);
+ basket(purpleX*W,H-62,purpleSize*1.12,'#8959e9','CATCH 1');
+ basket(orangeX*W,H-62,orangeSize*1.12,'#ff9855','CATCH 2')}
+function targetBasket(v){if(v==='1')return 'purple';if(v==='2')return 'orange';return null}
+function tapItem(o){if(o.tapped)return;if(o.y>H-125){loseImmediately('Too late! The number passed the line.');return}let dest=targetBasket(o.val);if(!dest){loseImmediately('That was a distractor! Catch only 1 and 2.');return}o.tapped=true;o.flyT=0;o.startX=o.x;o.startY=o.y;o.startR=o.r;o.dest=dest;tone(520,.07);$('banner').textContent='TAP!';fxTime=.25}
+function basketDropSound(){tone(260,.07,'sine',.07);setTimeout(()=>tone(420,.08,'sine',.06),65);setTimeout(()=>tone(620,.12,'triangle',.045),130)}
+function swallow(o){
+ basketDropSound();
+ if(o.dest==='purple'){purpleCount++;purpleSize=+(purpleSize+.055).toFixed(3);score+=10;round++;$('banner').textContent='PURPLE: YUM! 😆'}
+ else if(o.dest==='orange'){orangeCount++;orangeSize=+(orangeSize+.055).toFixed(3);round++;$('banner').textContent='ORANGE: YUM! 😆'}
+ hud();fxTime=.7;
+ if(purpleCount===10&&orangeCount===10){
+   items=[];levelPool=[];endLevel();
+ }
+}
+function endLevel(){
+ if(purpleCount===10&&orangeCount===10&&Math.abs(purpleSize-orangeSize)<0.001){
+   panel('🏆 LEVEL COMPLETE!','You collected ten 1s and ten 2s! Both baskets are equal. Welcome to the next world!','NEXT LEVEL ▶',next);
+ }else{
+   panel('😢 TIME UP — LEVEL LOST',`Purple collected ${purpleCount}/10 ones. Orange collected ${orangeCount}/10 twos. Both must reach 10 before time runs out.`,'TRY AGAIN',()=>{
+     purpleSize=.82;orangeSize=.82;score=Math.max(0,score-round*10);items=[];round=0;
+     $('overlay').style.display='none';startLevel();
+   });
+ }
+}
+function loseImmediately(reason){
+ if(!playing)return;
+ playing=false;cancelAnimationFrame(raf);
+ panel('😢 LEVEL LOST',reason||'You missed a number! Try again and catch every number before it reaches the line.','TRY AGAIN',()=>{
+   purpleSize=.82;orangeSize=.82;score=Math.max(0,score-round*10);startLevel();
+ });
+}
+function loop(now){if(!playing||paused)return;let dt=Math.min(.05,(now-last)/1000);last=now;time-=dt;spawn+=dt;let interval=Math.max(.30,1.25-level*.006);if(spawn>interval){spawn=0;spawnWave()}
+for(let i=items.length-1;i>=0;i--){let o=items[i];if(o.tapped){
+ // Quick, visible suction animation: object curves and shrinks into its basket.
+ o.flyT=(o.flyT||0)+dt;
+ let destX=o.dest==='purple'?purpleX*W:orangeX*W;
+ let destY=H-66;
+ let k=Math.min(1,o.flyT/.24);
+ let ease=1-Math.pow(1-k,3);
+ let startX=o.startX??o.x, startY=o.startY??o.y;
+ o.x=startX+(destX-startX)*ease;
+ o.y=startY+(destY-startY)*ease- Math.sin(k*Math.PI)*Math.min(32,H*.07);
+ o.r=o.startR*(1-ease*.62);
+ if(k>=1){swallow(o);items.splice(i,1)}
+}else{o.y+=o.v*dt;if(o.y>H-125){items.splice(i,1);if(o.val==='1'||o.val==='2'){loseImmediately('You missed number '+o.val+'! Catch all ten of each target number.');return}}}}
+if(fxTime>0){fxTime-=dt;if(fxTime<=0)$('banner').textContent=''}if(time<=0){
+ playing=false;cancelAnimationFrame(raf);endLevel();return
+}draw(now);hud();raf=requestAnimationFrame(loop)}
+cv.addEventListener('pointerdown',e=>{let r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let hit=-1;for(let i=items.length-1;i>=0;i--){let o=items[i];if(Math.hypot(x-o.x,y-o.y)<o.r+15){hit=i;break}}if(hit>=0)tapItem(items[hit])});
+$('start').onclick=begin;$('hear').onclick=()=>{speak('Purple basket wants number one. Orange basket wants number two. Tap the falling number before the line!')};$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊':'🔇';if(!soundOn)speechSynthesis.cancel()};
+$('pause').onclick=()=>{if(!playing&&!paused)return;paused=true;panel('⏸ PAUSED','Take a little rest, explorer!','CONTINUE',()=>{ $('overlay').style.display='none';paused=false;playing=true;last=performance.now();raf=requestAnimationFrame(loop)})};
+})();
+</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script></body></html>
