@@ -51,28 +51,62 @@ function crying(){}
 function clue(){$('clueText').textContent=`${set().basket} ${set().world} • 1 = PURPLE • 2 = ORANGE`;}
 function hud(){$('level').textContent=`LEVEL ${level} / 150`;$('time').textContent=`⏱ ${Math.ceil(time)}s / ${levelSeconds()}s`;$('score').textContent='⭐ '+score;$('sizes').textContent=`🟣 ${purpleCount}/10 · 🟠 ${orangeCount}/10`;$('world').textContent=set().world}
 function begin(){
- level=1;score=0;purpleSize=.82;orangeSize=.82;round=0;playing=false;paused=false;
- $('overlay').style.display='flex';
- $('overlay').innerHTML=`<div class="panel"><h1>🎧 Ready, little explorer?</h1><p><b>Purple 🟣 catches 1.</b><br><b>Orange 🟠 catches 2.</b><br>Collect 10 ones and 10 twos before time runs out. Watch out for the other numbers!</p><button id="ready">HEAR INSTRUCTIONS ▶</button></div>`;
- $('ready').onclick=()=>{
-   $('ready').disabled=true;$('ready').textContent='LISTENING…';
-   let briefing=`Hello, little explorer! The purple basket catches number one. The orange basket catches number two. Have fun!`;
-   if(soundOn){
-     try{
-       speechSynthesis.cancel();
-       let u=new SpeechSynthesisUtterance(briefing);
-       let voices=speechSynthesis.getVoices();
-       let preferred=voices.find(v=>/Google.*English|Samantha|Jenny|Aria|Natural.*English/i.test(v.name))||voices.find(v=>/^en(-|_)/i.test(v.lang));
-       if(preferred)u.voice=preferred;
-       u.rate=.90;u.pitch=1.03;u.volume=1;
-       u.onend=()=>{if($('ready')){$('overlay').style.display='none';startLevel()}};
-       u.onerror=()=>{$('overlay').style.display='none';startLevel()};
-       speechSynthesis.speak(u);
-     }catch(e){$('overlay').style.display='none';startLevel()}
-   }else{$('overlay').style.display='none';startLevel()}
- };
+  level=1;
+  score=0;
+  purpleSize=.82;
+  orangeSize=.82;
+  round=0;
+  playing=false;
+  paused=false;
+$('overlay').style.display='flex';
+  $('overlay').innerHTML=`
+    <div class="panel">
+      <h1>🎧 Ready, little explorer?</h1>
+      <p>
+        <b>Purple 🟣 catches number 1.</b><br>
+        <b>Orange 🟠 catches number 2.</b><br>
+        Tap only numbers 1 and 2 before they reach the line!
+      </p>
+      <button id="ready">HEAR INSTRUCTIONS ▶</button>
+    </div>`;
+  $('ready').onclick=()=>{
+    let btn=$('ready');
+    btn.disabled=true;
+    btn.textContent='LISTENING…';
+   function showStart(){
+      btn.disabled=false;
+      btn.textContent='START PLAYING ▶';
+      btn.onclick=()=>{
+        $('overlay').style.display='none';
+        startLevel();
+      };
+ }
+   if(!soundOn){
+      showStart();
+      return;
+   }
+   try{
+      speechSynthesis.cancel();
+    let u=new SpeechSynthesisUtterance(
+        'Purple catches number one. Orange catches number two. Tap only one and two!'
+      );
+let voices=speechSynthesis.getVoices();
+      let preferred=voices.find(v=>
+        /Google.*English|Samantha|Jenny|Aria|Natural.*English/i.test(v.name)
+      )||voices.find(v=>/^en(-|_)/i.test(v.lang));
+    if(preferred)u.voice=preferred;
+    u.rate=1.05;
+      u.pitch=1.05;
+      u.volume=1;
+    u.onend=showStart;
+      u.onerror=showStart;
+    speechSynthesis.speak(u);
+      }catch(e){
+      showStart();
+    }
+  };
 }
-function levelSeconds(){return Math.max(15,45-Math.floor((level-1)/5)*2)}
+ function levelSeconds(){return Math.max(15,45-Math.floor((level-1)/5)*2)}
 function startLevel(){
  $('overlay').style.display='none';
  items=[];
